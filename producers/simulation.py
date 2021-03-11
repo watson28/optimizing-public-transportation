@@ -8,6 +8,7 @@ import logging
 import logging.config
 from pathlib import Path
 
+from dotenv import load_dotenv
 import pandas as pd
 
 # Import logging before models to ensure configuration is picked up
@@ -15,12 +16,9 @@ logging.config.fileConfig(f"{Path(__file__).parents[0]}/logging.ini")
 
 from connector import configure_connector
 from models import Line, Weather
-from dotenv import load_dotenv
-
 
 logger = logging.getLogger(__name__)
 load_dotenv()
-
 
 class TimeSimulation:
     weekdays = IntEnum("weekdays", "mon tue wed thu fri sat sun", start=0)

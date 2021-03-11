@@ -2,11 +2,9 @@
 import logging
 import time
 import os
-from collections.abc import Iterator
+import json
 
-
-from confluent_kafka import avro
-from confluent_kafka.admin import AdminClient, NewTopic, ClusterMetadata, TopicMetadata
+from confluent_kafka.admin import AdminClient, NewTopic, ClusterMetadata
 from confluent_kafka.avro import AvroProducer
 
 logger = logging.getLogger(__name__)
@@ -17,6 +15,7 @@ class Producer:
 
     # Tracks existing topics across all Producer instances
     existing_topics = set([])
+    admin: AdminClient = None
 
     def __init__(
         self,
@@ -46,13 +45,13 @@ class Producer:
 
     def create_topic(self):
         """Creates the producer topic if it does not already exist"""
-        admin = AdminClient({ 'bootstrap.servers': os.getenv('KAFKA_URL')})
+        admin = self._get_admin_client()
         topic_metadata: ClusterMetadata = admin.list_topics(timeout=5)
         topic_producer_exists: bool = self.topic_name in topic_metadata.topics
-        
+
         if topic_producer_exists:
             return
-        
+
         futures = admin.create_topics([
             NewTopic(
                 topic = self.topic_name,
@@ -70,9 +69,31 @@ class Producer:
         topic_creation = futures[self.topic_name]
         try:
             topic_creation.result()
-        except Exception as e:
-            logger.error(f'Failed to create Kafka topic: {self.topic_name}')
-            raise e
+        except Exception as exception:
+            logger.error('Failed to create Kafka topic: %s', self.topic_name)
+            raise exception
+
+    def produce(self, value):
+        """Produce a kafka event"""
+        logger.info("producing event: %s", self.topic_name)
+        try:
+            self.producer.produce(
+                topic=self.topic_name,
+                key={"timestamp": self.time_millis()},
+                value=value
+            )
+        except Exception as exception:
+            logger.error(
+                'Failed to send event to kafka.\nTopic name: %s\nEvent value: %s\n',
+                self.topic_name,
+                json.dumps(value)
+            )
+            raise exception
+
+    def _get_admin_client(self):
+        if Producer.admin is None:
+            Producer.admin = AdminClient({ 'bootstrap.servers': os.getenv('KAFKA_URL')})
+        return Producer.admin
 
     def close(self):
         """Prepares the producer for exit by cleaning up the producer"""

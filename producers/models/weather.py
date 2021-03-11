@@ -4,10 +4,8 @@ import json
 import logging
 from pathlib import Path
 import random
-import urllib.parse
 import os
 import requests
-import datetime
 
 from models.producer import Producer
 
