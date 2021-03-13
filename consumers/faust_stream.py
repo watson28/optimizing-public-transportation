@@ -1,14 +1,17 @@
 """Defines trends calculations for stations"""
 import logging
+import os
+from dataclasses import dataclass
 
 import faust
+from dotenv import load_dotenv, find_dotenv
 
-
+load_dotenv(find_dotenv())
 logger = logging.getLogger(__name__)
 
-
-# Faust will ingest records from Kafka in this format
+@dataclass
 class Station(faust.Record):
+    """Format for received events"""
     stop_id: int
     direction_id: str
     stop_name: str
@@ -20,39 +23,53 @@ class Station(faust.Record):
     blue: bool
     green: bool
 
-
-# Faust will produce records to Kafka in this format
+@dataclass
 class TransformedStation(faust.Record):
+    """Format for produced events"""
     station_id: int
     station_name: str
     order: int
     line: str
 
+broker = os.getenv('KAFKA_URL').replace('PLAINTEXT', 'kafka')
+app = faust.App("stations-stream", broker=broker, store="memory://")
+station_topic = app.topic(
+    'com.udacity.project.chicago_transportation.station.stations',
+    key_type=None,
+    value_type=Station
+)
+transformed_station_topic = app.topic(
+    'com.udacity.project.chicago_transportation.station.transformed',
+    value_type=TransformedStation,
+    partitions=1
+)
 
-# TODO: Define a Faust Stream that ingests data from the Kafka Connect stations topic and
-#   places it into a new topic with only the necessary information.
-app = faust.App("stations-stream", broker="kafka://localhost:9092", store="memory://")
-# TODO: Define the input Kafka Topic. Hint: What topic did Kafka Connect output to?
-# topic = app.topic("TODO", value_type=Station)
-# TODO: Define the output Kafka Topic
-# out_topic = app.topic("TODO", partitions=1)
-# TODO: Define a Faust Table
-#table = app.Table(
-#    # "TODO",
-#    # default=TODO,
-#    partitions=1,
-#    changelog_topic=out_topic,
-#)
+table = app.Table(
+    'stations',
+    default=TransformedStation,
+    partitions=1,
+    changelog_topic=transformed_station_topic,
+)
 
+@app.agent(station_topic)
+async def transform_stations(stations):
+    async for station in stations:
+        transformed = TransformedStation(
+            station_id= station.station_id,
+            station_name=station.station_name,
+            order=station.order,
+            line=get_station_color(station)
+        )
+        await transformed_station_topic.send(value=transformed)
 
-#
-#
-# TODO: Using Faust, transform input `Station` records into `TransformedStation` records. Note that
-# "line" is the color of the station. So if the `Station` record has the field `red` set to true,
-# then you would set the `line` of the `TransformedStation` record to the string `"red"`
-#
-#
-
+def get_station_color(station: Station):
+    if station.red:
+        return 'red'
+    if station.blue:
+        return 'blue'
+    if station.green:
+        return 'green'
+    return None
 
 if __name__ == "__main__":
     app.main()

@@ -1,42 +1,44 @@
 """Configures KSQL to combine station and turnstile data"""
 import json
 import logging
-
+import os
+from dotenv import load_dotenv, find_dotenv
 import requests
 
 import topic_check
 
 
 logger = logging.getLogger(__name__)
+load_dotenv(find_dotenv())
 
 
-KSQL_URL = "http://localhost:8088"
 
-#
-# TODO: Complete the following KSQL statements.
-# TODO: For the first statement, create a `turnstile` table from your turnstile topic.
-#       Make sure to use 'avro' datatype!
-# TODO: For the second statment, create a `turnstile_summary` table by selecting from the
-#       `turnstile` table and grouping on station_id.
-#       Make sure to cast the COUNT of station id to `count`
-#       Make sure to set the value format to JSON
+KSQL_URL = os.getenv('KSQL_URL')
 
 KSQL_STATEMENT = """
-CREATE TABLE turnstile (
-    ???
-) WITH (
-    ???
-);
+CREATE TABLE turnstile
+  (station_id INT,
+   station_name VARCHAR,
+   line VARCHAR,
+   num_entries INT
+  )
+  WITH (KAFKA_TOPIC='com.udacity.project.chicago_transportation.station.turstile_entries',
+        KEY='station_id',
+        VALUE_FORMAT='AVRO'
+  );
 
 CREATE TABLE turnstile_summary
-WITH (???) AS
-    ???
+  WITH (VALUE_FORMAT='JSON') AS
+    SELECT station_id, SUM(num_entries)
+    FROM turnstile
+    GROUP BY station_id;
 """
 
 
 def execute_statement():
     """Executes the KSQL statement against the KSQL API"""
     if topic_check.topic_exists("TURNSTILE_SUMMARY") is True:
+        logger.info('TURNSTILE_SUMMARY Table already exists. skipping table creation.')
         return
 
     logging.debug("executing ksql statement...")
