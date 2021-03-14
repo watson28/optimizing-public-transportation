@@ -19,9 +19,10 @@ class Lines:
 
     def process_message(self, message):
         """Processes a station message"""
-        if "org.chicago.cta.station" in message.topic():
+        topic = message.topic()
+        if topic in ["com.udacity.project.chicago_transportation.station.transformed", "com.udacity.project.chicago_transportation.arrival"]:
             value = message.value()
-            if message.topic() == "org.chicago.cta.stations.table.v1":
+            if topic == "com.udacity.project.chicago_transportation.station.transformed":
                 value = json.loads(value)
             if value["line"] == "green":
                 self.green_line.process_message(message)
@@ -31,7 +32,7 @@ class Lines:
                 self.blue_line.process_message(message)
             else:
                 logger.debug("discarding unknown line msg %s", value["line"])
-        elif "TURNSTILE_SUMMARY" == message.topic():
+        elif message.topic() == "TURNSTILE_SUMMARY":
             self.green_line.process_message(message)
             self.red_line.process_message(message)
             self.blue_line.process_message(message)
