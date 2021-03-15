@@ -14,10 +14,6 @@
     {
       "name": "line",
       "type": "string"
-    },
-    {
-      "name": "num_entries",
-      "type": "int"
     }
   ]
 }

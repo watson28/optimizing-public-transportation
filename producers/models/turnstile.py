@@ -34,12 +34,12 @@ class Turnstile():
         """Simulates riders entering through the turnstile."""
         num_entries = self.turnstile_hardware.get_entries(timestamp, time_step)
 
-        Turnstile._producer.produce({
-            "station_id": self.station.station_id,
-            "station_name": self.station.name,
-            "line": self.station.color.name,
-            "num_entries": num_entries
-        })
+        for _ in range(num_entries):
+            Turnstile._producer.produce({
+                "station_id": self.station.station_id,
+                "station_name": self.station.name,
+                "line": self.station.color.name,
+            })
     
     def close(self):
         Turnstile._producer.close()

@@ -34,7 +34,8 @@ class Producer:
 
         self.broker_properties = {
             "bootstrap.servers": os.getenv('KAFKA_URL'),
-            "schema.registry.url": os.getenv('SCHEMA_REGISTRY_URL')
+            "schema.registry.url": os.getenv('SCHEMA_REGISTRY_URL'),
+            "group.id": "producer-1"
         }
 
         if self.topic_name not in Producer.existing_topics:

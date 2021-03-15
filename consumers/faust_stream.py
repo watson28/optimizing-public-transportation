@@ -60,7 +60,7 @@ async def transform_stations(stations):
             order=station.order,
             line=get_station_color(station)
         )
-        await transformed_station_topic.send(value=transformed)
+        table['station_id'] = transformed
 
 def get_station_color(station: Station):
     if station.red:

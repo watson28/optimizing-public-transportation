@@ -32,9 +32,10 @@ class KafkaConsumer:
 
         self.broker_properties = {
             'bootstrap.servers': os.getenv('KAFKA_URL'),
-            'group.id': 'consumer-1',
-            'auto.offset.reset': 'earliest'
+            'group.id': 'consumer-1'
         }
+        if self.offset_earliest:
+            self.broker_properties['auto.offset.reset'] = 'earliest'
 
         if is_avro is True:
             self.broker_properties["schema.registry.url"] = os.getenv('SCHEMA_REGISTRY_URL')

@@ -19,8 +19,7 @@ KSQL_STATEMENT = """
 CREATE TABLE turnstile
   (station_id INT,
    station_name VARCHAR,
-   line VARCHAR,
-   num_entries INT
+   line VARCHAR
   )
   WITH (KAFKA_TOPIC='com.udacity.project.chicago_transportation.station.turstile_entries',
         KEY='station_id',
@@ -29,7 +28,7 @@ CREATE TABLE turnstile
 
 CREATE TABLE turnstile_summary
   WITH (VALUE_FORMAT='JSON') AS
-    SELECT station_id, SUM(num_entries) AS COUNT
+    SELECT station_id, COUNT(station_id) AS count
     FROM turnstile
     GROUP BY station_id;
 """
