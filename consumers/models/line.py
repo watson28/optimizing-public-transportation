@@ -54,26 +54,22 @@ class Line:
             value.get("direction"), value.get("train_id"), value.get("train_status")
         )
 
-    def process_message(self, message):
-        """Given a kafka message, extract data"""
-        if message.topic() == 'com.udacity.project.chicago_transportation.station.transformed':
-            try:
-                value = json.loads(message.value())
-                self._handle_station(value)
-            except Exception as exception:
-                logger.fatal("bad station? %s, %s", value, exception)
-        elif message.topic() == 'com.udacity.project.chicago_transportation.arrival':
-            self._handle_arrival(message)
-        elif message.topic() == 'TURNSTILE_SUMMARY':
-            json_data = json.loads(message.value())
-            logger.info('Data from turnstile_summary %s', message.value())
-            station_id = json_data.get("STATION_ID")
-            station = self.stations.get(station_id)
-            if station is None:
-                logger.debug("unable to handle message due to missing station")
-                return
-            station.process_message(json_data)
-        else:
-            logger.debug(
-                "unable to find handler for message from topic %s", message.topic
-            )
+    def process_new_arrival_message(self, message):
+        self._handle_arrival(message)
+
+    def process_station_update_message(self, message):
+        try:
+            value = json.loads(message.value())
+            self._handle_station(value)
+        except json.decoder.JSONDecodeError as exception:
+            logger.fatal("bad station? %s, %s", value, exception)
+
+    def process_turnstile_update_message(self, message):
+        json_data = json.loads(message.value())
+        logger.info('Data from turnstile_summary %s', message.value())
+        station_id = json_data.get("STATION_ID")
+        station = self.stations.get(station_id)
+        if station is None:
+            logger.debug("unable to handle message due to missing station")
+            return
+        station.process_message(json_data)

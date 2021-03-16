@@ -75,7 +75,15 @@ class KafkaConsumer:
             return 1
 
         logger.info('Received message from topic %s', self.topic_name_pattern)
-        self.message_handler(message)
+        try:
+            self.message_handler(message)
+        except ValueError as exception:
+            logger.error(
+                'Unexpected value received in topic %s\n%s',
+                self.topic_name_pattern,
+                exception
+            )
+
         return 1
 
 

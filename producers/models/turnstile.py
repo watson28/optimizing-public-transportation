@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class Turnstile():
-    _producer: Producer
+    _producer: Producer = None
 
     def __init__(self, station):
         """Create the Turnstile"""
@@ -22,13 +22,14 @@ class Turnstile():
 
     @classmethod
     def _init_producer_singleton(cls):
-        key_schema = avro.load(f"{Path(__file__).parents[0]}/schemas/turnstile_key.json")
-        value_schema = avro.load(f"{Path(__file__).parents[0]}/schemas/turnstile_value.json")
-        cls._producer = Producer(
-            'com.udacity.project.chicago_transportation.station.turstile_entries',
-            key_schema=key_schema,
-            value_schema=value_schema
-        )
+        if cls._producer is None:
+            key_schema = avro.load(f"{Path(__file__).parents[0]}/schemas/turnstile_key.json")
+            value_schema = avro.load(f"{Path(__file__).parents[0]}/schemas/turnstile_value.json")
+            cls._producer = Producer(
+                'com.udacity.project.chicago_transportation.station.turstile_entries',
+                key_schema=key_schema,
+                value_schema=value_schema
+            )
 
     def run(self, timestamp, time_step):
         """Simulates riders entering through the turnstile."""
@@ -40,6 +41,6 @@ class Turnstile():
                 "station_name": self.station.name,
                 "line": self.station.color.name,
             })
-    
+
     def close(self):
         Turnstile._producer.close()

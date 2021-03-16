@@ -56,7 +56,7 @@ def run_server():
     lines = Lines()
 
     application = tornado.web.Application(
-        [(r"/", MainHandler, {"weather": weather_model, "lines": lines})]
+        [(r"/", MainHandler, {"weather": weather_model, "lines": lines.get_lines()})]
     )
     application.listen(8888)
 
@@ -69,18 +69,18 @@ def run_server():
         ),
         KafkaConsumer(
             "com.udacity.project.chicago_transportation.station.transformed",
-            lines.process_message,
+            lines.process_station_update_message,
             offset_earliest=True,
             is_avro=False,
         ),
         KafkaConsumer(
             "com.udacity.project.chicago_transportation.arrival",
-            lines.process_message,
+            lines.process_new_arrival_message,
             offset_earliest=True,
         ),
         KafkaConsumer(
             "TURNSTILE_SUMMARY",
-            lines.process_message,
+            lines.process_turnstile_update_message,
             offset_earliest=True,
             is_avro=False,
         ),

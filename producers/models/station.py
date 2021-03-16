@@ -14,8 +14,7 @@ logger = logging.getLogger(__name__)
 
 class Station():
     """Defines a single station"""
-
-    _producer: Producer
+    _producer: Producer = None
 
     def __init__(self, station_id, name, color, direction_a=None, direction_b=None):
         self.name = name
@@ -26,16 +25,18 @@ class Station():
         self.a_train = None
         self.b_train = None
         self.turnstile = Turnstile(self)
-        self._init_producer_singleton()
+        Station._init_producer_singleton()
 
-    def _init_producer_singleton(self):
-        key_schema = avro.load(f"{Path(__file__).parents[0]}/schemas/arrival_key.json")
-        value_schema = avro.load(f"{Path(__file__).parents[0]}/schemas/arrival_value.json")
-        Station._producer = Producer(
-            'com.udacity.project.chicago_transportation.arrival',
-            key_schema=key_schema,
-            value_schema=value_schema
-        )
+    @classmethod
+    def _init_producer_singleton(cls):
+        if cls._producer is None:
+            key_schema = avro.load(f"{Path(__file__).parents[0]}/schemas/arrival_key.json")
+            value_schema = avro.load(f"{Path(__file__).parents[0]}/schemas/arrival_value.json")
+            cls._producer = Producer(
+                'com.udacity.project.chicago_transportation.arrival',
+                key_schema=key_schema,
+                value_schema=value_schema
+            )
 
     def run(self, train: Train, direction: str, prev_station_id: int, prev_direction: str):
         """Simulates train arrivals at this station"""
